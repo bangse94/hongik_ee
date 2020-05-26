@@ -16,12 +16,12 @@ Y = tf.placeholder(tf.float32)
 #layer 1, 3 input 4 output
 W1 = tf.Variable(tf.random_normal([3, 4]), name="weight1")
 b1 = tf.Variable(tf.random_normal([4]), name="bias1")
-layer1 = tf.nn.leaky_relu(tf.matmul(X, W1) + b1)
+layer1 = tf.sigmoid(tf.matmul(X, W1) + b1)
 
 #layer 2, 4 input 2 output
 W2 = tf.Variable(tf.random_normal([4, 2]), name="weight2")
 b2 = tf.Variable(tf.random_normal([2]), name="bias2")
-hypothesis = tf.nn.leaky_relu(tf.matmul(layer1, W2) + b2)
+hypothesis = tf.sigmoid(tf.matmul(layer1, W2) + b2)
 
 # cost function / minimize cost
 cost = -tf.reduce_mean(Y * tf.log(hypothesis) + (1 - Y) * tf.log(1 - hypothesis))
