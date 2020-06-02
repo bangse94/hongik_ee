@@ -1,0 +1,140 @@
+'''
+training part
+'''
+# ===========================
+# import library
+# ===========================
+import tensorflow as tf
+from tensorflow import keras
+from keras.datasets import mnist
+from keras.preprocessing.image import ImageDataGenerator
+from keras import models
+from keras.models import Sequential
+from keras.models import load_model
+from keras.utils import to_categorical
+from keras import layers
+from keras.layers import Dense, BatchNormalization, Activation, Dropout
+import matplotlib.pyplot as plt
+
+print("TensorFlow version : ", tf.__version__)
+#===========================
+# import mnist dataset
+#===========================
+(train_images, train_labels), (test_images, test_labels) = mnist.load_data()
+#===========================
+# reshape input data
+#===========================
+train_images = train_images.reshape((60000,28,28,1))
+train_images = train_images.astype('float32')/255
+test_images = test_images.reshape((10000,28,28,1))
+test_images = test_images.astype('float32')/255
+#===========================
+# train labels
+#===========================
+train_labels = to_categorical(train_labels) #one-hot encoding
+test_labels = to_categorical(test_labels) #one-hot encoding
+#===========================
+# model creation by sequential class
+# Sequential CNN 구조를 기본으로 VGGnet의 아이디어를 적용-> 모든 컨벌루션 레이어에 (3X3)filter 사용
+# 9layer = 6 Conv Layer + 3 Fully Connection layer
+#===========================
+model = models.Sequential()
+model.add(layers.Conv2D(64,(3,3,),activation='relu',input_shape=(28,28,1),padding='same'))
+model.add(layers.MaxPooling2D(2,2))
+model.add(layers.Conv2D(128,(3,3,),activation='relu', padding='same'))
+model.add(layers.Conv2D(128,(3,3,),activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2,2))
+model.add(layers.Conv2D(256,(3,3,),activation='relu', padding='same'))
+model.add(layers.Conv2D(256,(3,3,),activation='relu', padding='same'))
+model.add(layers.Conv2D(256,(3,3,),activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(2,2))
+model.add(layers.Flatten())
+model.add(layers.Dense(4096,activation='relu'))
+model.add(layers.Dropout(0.3))
+model.add(layers.Dense(1000,activation='relu'))
+model.add(layers.Dropout(0.3))
+model.add(layers.Dense(10,activation='softmax'))
+print(model.summary())
+#===========================
+# data augmentation
+#===========================
+data_gen = ImageDataGenerator(rotation_range=90, horizontal_flip=True, vertical_flip=True, zoom_range=[0.5, 1.0])
+test_gen = ImageDataGenerator()
+train_generator = data_gen.flow(train_images, train_labels, batch_size=60)
+test_generator = test_gen.flow(test_images, test_labels, batch_size=60)
+#===========================
+# model compile and training
+#===========================
+model.compile(optimizer='adam',loss='categorical_crossentropy',metrics=['accuracy'])
+trace = model.fit_generator(train_generator, steps_per_epoch=60000/60, epochs=100,
+                           validation_data=test_generator, validation_steps=10000/60)
+
+#===========================
+# model evaluate
+#===========================
+eval = model.evaluate_generator(test_generator, steps=1)
+print("evaluate model %s : %.2f%%" % (model.metrics_names[1], eval[1]*100))
+
+#===========================
+# save model
+#===========================
+model.save('mnist_net_model.h5')
+
+#===========================
+# show loss, accuracy(train, validiation)
+#===========================
+plt.figure(figsize=(12, 8))
+
+plt.subplot(1, 2, 1)
+plt.plot(trace.history['loss'])
+plt.title("loss graph")
+plt.ylabel("loss")
+plt.xlabel("epoch")
+
+plt.subplot(1, 2, 2)
+plt.title("accuracy graph")
+plt.ylabel("acc")
+plt.xlabel("epoch")
+plt.plot(trace.history['accuracy'], 'b', label="training")
+plt.plot(trace.history['val_accuracy'], 'r:', label="validation")
+plt.legend()
+
+plt.show()
+
+'''
+test part
+'''
+import tensorflow as tf
+from tensorflow import keras
+from keras import models
+from keras.models import load_model
+from keras.utils import np_utils
+from keras.datasets import mnist
+import numpy as np
+
+print("TensorFlow version : " , tf.__version__)
+
+#===========================
+# import mnist data set
+#===========================
+(train_images, train_labels), (test_images, test_labels) = mnist.load_data()
+test_images = test_images.reshape(10000, 28, 28, 1).astype('float32')/255
+test_labels = np_utils.to_categorical(test_labels)
+predict_img_idx = np.random.choice(test_images.shape[0], 10000)
+predict_img = test_images[predict_img_idx]
+
+#===========================
+# load model
+#===========================
+model = load_model('mnist_net_model.h5')
+
+#===========================
+# prdict
+#===========================
+predict_label = model.predict_classes(predict_img)
+acc = 0
+for i in range(10000):
+    if np.argmax(test_labels[predict_img_idx[i]]) == predict_label[i]:
+        acc += 1
+
+print('acc : %.2f%%' % (acc/100))
