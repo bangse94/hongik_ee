@@ -129,7 +129,7 @@ predict_img = test_images[predict_img_idx]
 model = load_model('mnist_net_model.h5')
 
 #===========================
-# prdict
+# predict
 #===========================
 predict_label = model.predict_classes(predict_img)
 acc = 0
